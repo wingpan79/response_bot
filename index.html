@@ -17,16 +17,18 @@
                     $("#returnedData").html("Result: " + status + " " + error + " " + xhr.status + " " + xhr.statusText)
             });
 	}, 10000);*/
+	
 	var chat_result =  (localStorage.getItem("chat_result")) ? JSON.parse(localStorage.getItem("chat_result")) : {};
+	
 	var chat_room = (localStorage.getItem("chat_room")) ? JSON.parse(localStorage.getItem("chat_room")) : {};
-	console.log(chat_result);
-	console.log(chat_room);
+
 	//var chat_result = {};
 	var chat_id = (localStorage.getItem("chat_id")) ? localStorage.getItem("chat_id") : 0;
-	var token = "1800161917:AAEXlYjI3UVkV0rvzKxH6A3dbjPKIjqz8zs";
+	var token = (localStorage.getItem("token")) ? localStorage.getItem("token") : '';
 	var url = "https://api.telegram.org/bot"+token+"/";
 	//var server = "https://c8d4f510a703.ngrok.io";
 	var msg_id = 0;
+	$("#token").val(token);
 	//$("#chat_id").trigger( "change" );
 	if(!jQuery.isEmptyObject(chat_result)){
 		appendMsg();
@@ -35,12 +37,14 @@
 		getMsg();
 	}
 	setInterval(function() {
-		getMsg();
+		if(token){
+			getMsg();
+		}		
 	}, 10000);
 	
 	
 
-	function getMsg(){
+	function getMsg(){	
 		$.get( url+"getupdates")
 		.done(function( data ) {
 			if(data.ok){
@@ -49,7 +53,7 @@
 					var first_name = (message.from.first_name) ? message.from.first_name : "";
 					var last_name = (message.from.last_name) ? message.from.last_name : "";
 					var title = (message.chat.title) ? message.chat.title : first_name + " "+ last_name;
-					//console.log(message);
+					console.log(message);
 					if(!chat_result[message.chat.id]){
 						$("#chat_id").append('<option value="'+message.chat.id+'">'+title+'</option>');
 						chat_result[message.chat.id] = {};
@@ -82,7 +86,11 @@
 								file_id : file_id,
 								date:message.date,
 								};
-						var result = JSON.parse(localStorage.getItem("chat_result"));
+						if(!jQuery.isEmptyObject(localStorage.getItem("chat_result"))){
+							var result = JSON.parse(localStorage.getItem("chat_result"));
+						}else{
+							var result = {};
+						}
 						let combine = {
 							...result,
 							...chat_result
@@ -153,12 +161,17 @@
 	});
 	$("#chat_id").change(function(){
 		chat_id = ($(this).val()) ? $(this).val() : chat_id;
-		console.log(chat_id);
 		localStorage.setItem("chat_id", chat_id);
 		$(".msg_history").empty();
 		appendMsg();
 	});
-	
+	$("#token_submit").click(function(){
+		token = $("#token").val();
+		url = "https://api.telegram.org/bot"+token+"/";
+		localStorage.setItem("token", token);
+		localStorage.removeItem("chat_room");
+		localStorage.removeItem("chat_result");
+	})
 	function appendChatroom(){
 		jQuery.each( chat_room, function( index, v ) {
 			$("#chat_id").append('<option value="'+index+'">'+v+'</option>');
@@ -186,7 +199,8 @@
 </head>
 <body>
 <div class="container">
-<h3 class=" text-center">Messaging <div style='float: right;' id="chat"><select id="chat_id" name="chat_id"><option value="0">Chat List</option></select></div></h3>
+<h3>Telegram Bot <input type="text" id="token" placeholder="Telegram bot token"  class="form-control" style="width: 300px;display: inline-block;"> </input><button id='token_submit' type="button" class="btn btn-primary">Submit</button>
+ <div style='float: right;' id="chat"><select id="chat_id" name="chat_id"><option value="0">Chat List</option></select></div></h3>
 <div class="messaging">
       <div class="inbox_msg">
         <div class="mesgs">
