@@ -48,12 +48,14 @@
 		$.get( url+"getupdates")
 		.done(function( data ) {
 			if(data.ok){
+				
 				jQuery.each( data.result, function( index, val ) {
-					var message = val.message;
+					console.log(val);
+					var message = (val.message) ? val.message : val.edited_message;
+					
 					var first_name = (message.from.first_name) ? message.from.first_name : "";
 					var last_name = (message.from.last_name) ? message.from.last_name : "";
 					var title = (message.chat.title) ? message.chat.title : first_name + " "+ last_name;
-					console.log(message);
 					if(!chat_result[message.chat.id]){
 						$("#chat_id").append('<option value="'+message.chat.id+'">'+title+'</option>');
 						chat_result[message.chat.id] = {};
@@ -144,7 +146,7 @@
 		.done(function( data ) {
 			if(data.ok){
 				var file_path = "https://api.telegram.org/file/bot"+token+"/"+data.result.file_path;
-				if(file_path.endsWith("MP4")){
+				if(file_path.endsWith("mp4")){
 					var msg = '<video width="450" height="360" autoplay controls  loop>';
 					msg += '<source src="'+file_path+'" type="video/mp4">';
 					msg += '</video>';
@@ -171,6 +173,7 @@
 		localStorage.setItem("token", token);
 		localStorage.removeItem("chat_room");
 		localStorage.removeItem("chat_result");
+		location.reload();
 	})
 	function appendChatroom(){
 		jQuery.each( chat_room, function( index, v ) {
