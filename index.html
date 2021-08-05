@@ -7,29 +7,16 @@
 <link href="main.css" type="text/css" rel="stylesheet"/>
 <script>
     $(document).ready(function () {
-	/*setInterval(function() {
-     $.get("https://c8d4f510a703.ngrok.io",
-                function (result, status, xhr) {
-				console.log(JSON.parse(result));
-                    $("#returnedData").html(result);
-                }
-                ).fail(function (xhr, status, error) {
-                    $("#returnedData").html("Result: " + status + " " + error + " " + xhr.status + " " + xhr.statusText)
-            });
-	}, 10000);*/
-	
-	var chat_result =  (localStorage.getItem("chat_result")) ? JSON.parse(localStorage.getItem("chat_result")) : {};
-	
-	var chat_room = (localStorage.getItem("chat_room")) ? JSON.parse(localStorage.getItem("chat_room")) : {};
 
-	//var chat_result = {};
+	var chat_result =  (localStorage.getItem("chat_result")) ? JSON.parse(localStorage.getItem("chat_result")) : {};
+	var chat_room = (localStorage.getItem("chat_room")) ? JSON.parse(localStorage.getItem("chat_room")) : {};
 	var chat_id = (localStorage.getItem("chat_id")) ? localStorage.getItem("chat_id") : 0;
 	var token = (localStorage.getItem("token")) ? localStorage.getItem("token") : '';
 	var url = "https://api.telegram.org/bot"+token+"/";
-	//var server = "https://c8d4f510a703.ngrok.io";
+	var offset = (localStorage.getItem("offset")) ? localStorage.getItem("offset") : 0;
 	var msg_id = 0;
+	var bot_id = (token) ? token.split(':')[0] : 0;
 	$("#token").val(token);
-	//$("#chat_id").trigger( "change" );
 	if(!jQuery.isEmptyObject(chat_result)){
 		appendMsg();
 		appendChatroom()
@@ -44,13 +31,14 @@
 	
 	
 
-	function getMsg(){	
-		$.get( url+"getupdates")
+	function getMsg(){
+		$.get( url+"getupdates",{offset:offset})
 		.done(function( data ) {
 			if(data.ok){
-				
+				console.log(data.result);
+				if(data.result.length){
 				jQuery.each( data.result, function( index, val ) {
-					console.log(val);
+					
 					var message = (val.message) ? val.message : val.edited_message;
 					
 					var first_name = (message.from.first_name) ? message.from.first_name : "";
@@ -87,35 +75,33 @@
 								msg : msg,
 								file_id : file_id,
 								date:message.date,
+								user_id : message.from.id,
 								};
-						if(!jQuery.isEmptyObject(localStorage.getItem("chat_result"))){
-							var result = JSON.parse(localStorage.getItem("chat_result"));
-						}else{
-							var result = {};
-						}
-						let combine = {
-							...result,
-							...chat_result
-						};
+						
 						chat_result[message.chat.id][message.message_id] = v;
-						localStorage.setItem("chat_result", JSON.stringify(combine));
+						storageChat();
 						if(chat_id == message.chat.id){
-							var msg = '<div class="incoming_msg">';
-							msg += '<div class="incoming_msg_img"> '+v.first_name + " " +v.last_name+' </div>';
-							msg += '<div class="received_msg"><div class="received_withd_msg">';
-							msg += '<p class="msg_box" data-msg_id="'+v.message_id+'">'+v.msg+'</p>';
+							var msg_box = '<div class="incoming_msg">';
+							msg_box += '<div class="incoming_msg_img"> '+v.first_name + " " +v.last_name+' </div>';
+							msg_box += '<div class="received_msg"><div class="received_withd_msg">';
+							msg_box += '<p class="msg_box" data-msg_id="'+v.message_id+'">'+v.msg+'</p>';
 							if(v.file_id){
-							msg += '<button data-file_id="'+v.file_id+'" class="btn open_media" type="submit"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>';
+								msg_box += '<button data-file_id="'+v.file_id+'" class="btn open_media" type="submit"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>';
 							}
-							msg += '<span class="time_date">'+v.date+'</span> </div>';
-							msg += '</div></div></div>';								
-							$(".msg_history").append(msg);
-						}
-					}
+							msg_box += '<span class="time_date">'+v.date+'</span> </div>';
+							msg_box += '</div></div></div>';								
+							$(".msg_history").append(msg_box);
+						}	
+					}	
 				});
+				 offset = data.result[Object.keys(data.result).length-1].update_id + 1; //get last offset and save italic
+				 localStorage.setItem("offset",offset);
+				 }
 			}
 		});
 	}
+	
+	//send msg
 	$("#msg").submit(function(event){
 		event.preventDefault();
 		var msg = { chat_id: chat_id, text: $(".write_msg").val()};
@@ -126,20 +112,38 @@
 		$.get( url+"sendMessage", msg)
 		.done(function( data ) {
 			if(data.ok){
-				var msg = '<div class="outgoing_msg"><div class="sent_msg">';
-                msg += '<p>'+$(".write_msg").val()+'</p>'
-				$(".msg_history").append(msg);
+				console.log(data.result);
+				var message = data.result;
+				var first_name = (message.from.first_name) ? message.from.first_name : "";
+				var last_name = (message.from.last_name) ? message.from.last_name : "";
+				var v = {
+					first_name:first_name,
+					last_name:last_name,
+					message_id:message.message_id,
+					msg : msg.text,
+					date:message.date,
+					user_id:message.from.id,
+				};
+				chat_result[data.result.chat.id][data.result.message_id] = v;
+				storageChat();
+				var msg_box = '<div class="outgoing_msg"><div class="sent_msg">';
+                msg_box += '<p>'+$(".write_msg").val()+'</p>'
+				$(".msg_history").append(msg_box);
 				$(".write_msg").val("");
 				msg_id = 0;
+				$('#reply_msg').empty();
 			}
 		});
 	});
+	
+	//reply msg
 	$( ".msg_history" ).on( "click", '.msg_box', function() {
 		msg_id = $( this ).data("msg_id");
 		text = $(this).text();
 		$('#reply_msg').text(text);
 	});
-
+	
+	//open media mp4 photo
 	$( ".msg_history" ).on( "click", '.open_media', function() {
 	    var msg_button = $(this);
 		$.get( url+"getFile", {file_id:msg_button.data("file_id")})
@@ -161,6 +165,7 @@
 		});
 	
 	});
+	//select box change handle
 	$("#chat_id").change(function(){
 		chat_id = ($(this).val()) ? $(this).val() : chat_id;
 		localStorage.setItem("chat_id", chat_id);
@@ -175,6 +180,15 @@
 		localStorage.removeItem("chat_result");
 		location.reload();
 	})
+	
+	function storageChat(){
+		var result = (!jQuery.isEmptyObject(localStorage.getItem("chat_result"))) ? JSON.parse(localStorage.getItem("chat_result")) : {};
+		let combine = {
+			...result,
+			...chat_result
+		};
+		localStorage.setItem("chat_result", JSON.stringify(combine)); //add the new message to localStorage
+	}
 	function appendChatroom(){
 		jQuery.each( chat_room, function( index, v ) {
 			$("#chat_id").append('<option value="'+index+'">'+v+'</option>');
@@ -183,16 +197,22 @@
 	
 	function appendMsg(){
 		jQuery.each( chat_result[chat_id], function( index, v ) {
-			var msg = '<div class="incoming_msg">';
-			msg += '<div class="incoming_msg_img"> '+v.first_name + " " +v.last_name+' </div>';
-			msg += '<div class="received_msg"><div class="received_withd_msg">';
-			msg += '<p class="msg_box" data-msg_id="'+v.message_id+'">'+v.msg+'</p>';
-			if(v.file_id){
-				msg += '<button data-file_id="'+v.file_id+'" class="btn open_media" type="submit"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>';
-				}
-				msg += '<span class="time_date">'+v.date+'</span> </div>';
-				msg += '</div></div></div>';								
-				$(".msg_history").append(msg);
+		console.log(v);
+			if(v.user_id != bot_id){
+				var msg = '<div class="incoming_msg">';
+				msg += '<div class="incoming_msg_img"> '+v.first_name + " " +v.last_name+' </div>';
+				msg += '<div class="received_msg"><div class="received_withd_msg">';
+				msg += '<p class="msg_box" data-msg_id="'+v.message_id+'">'+v.msg+'</p>';
+				if(v.file_id){
+					msg += '<button data-file_id="'+v.file_id+'" class="btn open_media" type="submit"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>';
+					}
+					msg += '<span class="time_date">'+v.date+'</span> </div>';
+					msg += '</div></div></div>';								
+					
+			}else{
+				var msg = '<div class="outgoing_msg"><div class="sent_msg"><p>'+v.msg+'</p></div></div>';
+			}
+			$(".msg_history").append(msg);
 		});
 	}
 	
