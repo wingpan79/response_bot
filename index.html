@@ -19,15 +19,17 @@
 	$("#token").val(token);
 	if(!jQuery.isEmptyObject(chat_result)){
 		appendMsg();
-		appendChatroom()
+		appendChatroom();
+		getMsg();
+		$(".msg_history").stop().animate({ scrollTop: $(".msg_history")[0].scrollHeight}, 1);
 	}else{
 		getMsg();
 	}
-	setInterval(function() {
+	/*setInterval(function() {
 		if(token){
 			getMsg();
 		}		
-	}, 10000);
+	}, 10000);*/
 	
 	
 
@@ -40,7 +42,7 @@
 				jQuery.each( data.result, function( index, val ) {
 					
 					var message = (val.message) ? val.message : val.edited_message;
-					
+					console.log(message);
 					var first_name = (message.from.first_name) ? message.from.first_name : "";
 					var last_name = (message.from.last_name) ? message.from.last_name : "";
 					var title = (message.chat.title) ? message.chat.title : first_name + " "+ last_name;
@@ -57,9 +59,7 @@
 						if((message.text)){
 							msg = message.text;
 						}else if(message.sticker){
-							if(!message.sticker.is_animated){
-								file_id = message.sticker.file_id;
-							}
+							file_id = message.sticker.file_id;
 							msg = message.sticker.set_name+":"+message.sticker.emoji;
 						}else if(message.animation){
 							file_id = message.animation.file_id;
@@ -68,13 +68,25 @@
 							file_id = message.photo[message.photo.length - 1].file_id;
 							msg = (message.caption) ? message.caption  + ":Photo" : message.photo[message.photo.length - 1].file_unique_id+ ":Photo";
 						}
+						
+						var options = {
+						  day: 'numeric',    //(e.g., 1)
+						  month: 'short',    //(e.g., Oct)
+						  year: 'numeric',   //(e.g., 2019)
+						  hour: '2-digit',   //(e.g., 02)
+						  minute: '2-digit', //(e.g., 02)
+						  hour12: true,     // 12 hours AM/PM
+						  timeZone: 'Asia/Taipei' 
+						};
+						var date = new Date(message.date*1000).toLocaleString('en-US', options); //convert time format 
+						console.log(date); 
 						var v = {
 								first_name:first_name,
 								last_name:last_name,
 								message_id:message.message_id,
 								msg : msg,
 								file_id : file_id,
-								date:message.date,
+								date:date,
 								user_id : message.from.id,
 								};
 						
@@ -94,8 +106,11 @@
 						}	
 					}	
 				});
-				 offset = data.result[Object.keys(data.result).length-1].update_id + 1; //get last offset and save italic
-				 localStorage.setItem("offset",offset);
+					if(offset != data.result[Object.keys(data.result).length-1].update_id){
+						offset = data.result[Object.keys(data.result).length-1].update_id + 1; //get last offset and save italic
+						localStorage.setItem("offset",offset);
+						$(".msg_history").stop().animate({ scrollTop: $(".msg_history")[0].scrollHeight}, 100);
+					}
 				 }
 			}
 		});
@@ -132,6 +147,7 @@
 				$(".write_msg").val("");
 				msg_id = 0;
 				$('#reply_msg').empty();
+				$(".msg_history").stop().animate({ scrollTop: $(".msg_history")[0].scrollHeight}, 100);
 			}
 		});
 	});
@@ -149,12 +165,14 @@
 		$.get( url+"getFile", {file_id:msg_button.data("file_id")})
 		.done(function( data ) {
 			if(data.ok){
-				var file_path = "https://api.telegram.org/file/bot"+token+"/"+data.result.file_path;
-				if(file_path.endsWith("mp4")){
+				var file = data.result.file_path;
+				var file_path = "https://api.telegram.org/file/bot"+token+"/"+file;
+				console.log(file);
+				if(file.startsWith("animations")){
 					var msg = '<video width="450" height="360" autoplay controls  loop>';
 					msg += '<source src="'+file_path+'" type="video/mp4">';
 					msg += '</video>';
-				}else if(file_path.endsWith("jpg") || file_path.endsWith("webp")){
+				}else if(file.startsWith("stickers")){
 					var msg = '<img src="'+file_path+'"/>';
 				}else{
 					var msg = file_path;
