@@ -25,11 +25,11 @@
 	}else{
 		getMsg();
 	}
-	/*setInterval(function() {
+	setInterval(function() {
 		if(token){
 			getMsg();
 		}		
-	}, 10000);*/
+	}, 10000);
 	
 	
 
@@ -195,7 +195,6 @@
 		url = "https://api.telegram.org/bot"+token+"/";
 		localStorage.setItem("token", token);
 		localStorage.removeItem("chat_room");
-		localStorage.removeItem("chat_result");
 		location.reload();
 	})
 	
