@@ -9,7 +9,7 @@ img{ max-width:100%;}
 .inbox_msg {
   border: 1px solid #c4c4c4;
   clear: both;
-  overflow: hidden;
+ 
 }
 .top_spac{ margin: 20px 0 0;}
 .outgoing_msg_detail{
@@ -95,7 +95,7 @@ img{ max-width:100%;}
 }
 .received_withd_msg { width: 65%;}
 .mesgs {
-  float: left;
+ 
   padding: 30px 15px 0 25px;
   width: 100%;
 }
@@ -138,6 +138,6 @@ img{ max-width:100%;}
 }
 .messaging { padding: 0 0 50px 0;}
 .msg_history {
-  height: 1110px;
+  max-height: 90vh;
   overflow-y: auto;
 }
