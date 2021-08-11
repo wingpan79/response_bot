@@ -42,11 +42,15 @@
 				var title = (message.chat.title) ? message.chat.title : first_name + " " + last_name;
 				var msg = "";
 				var file_id = '';
+				var animate_sticker = false;
+				var sticker_name = '';
 				if ((message.text)) {
 					msg = message.text;
 				} else if (message.sticker) {
 					file_id = message.sticker.file_id;
-					msg = message.sticker.set_name + ":" + message.sticker.emoji;
+					animate_sticker = message.sticker.is_animated; //check if animate_sticker 
+					msg = message.sticker.set_name + ":" + message.sticker.emoji + ":sticker";
+					sticker_name = message.sticker.set_name + ":" + message.sticker.emoji;
 				} else if (message.animation) {
 					file_id = message.animation.file_id;
 					msg = (message.caption) ? message.caption + ":" + message.animation.mime_type : message.animation.mime_type;
@@ -74,24 +78,27 @@
 					user_id: message.from.id,
 					chat_id: message.chat.id,
 					title: title,
+					animate_sticker: animate_sticker,
+					sticker_name:sticker_name,
 				};
 				return v;
 			}
 
 			function getMsg() {
 				$.get(url + "getupdates", { offset: offset })
-					.done(function (data) {						
+					.done(function (data) {
 						if (data.ok) {
-						
+
 							if (data.result.length) {
-									var r = null;
-									var message = null;
+								var message = null;
 								jQuery.each(data.result, function (index, val) {
 									var message = (val.message) ? val.message : val.edited_message;
+									console.log(message);
 									v = convertMessage(message);
-									
+									var r = null;
 									if (message.reply_to_message) {
 										r = convertMessage(message.reply_to_message);
+										v.reply = r;
 									}
 									if (!chat_result[v.chat_id]) {
 										$("#chat_id").append('<option value="' + v.chat_id + '">' + v.title + '</option>');
@@ -102,21 +109,23 @@
 
 									if (!chat_result[v.chat_id][v.message_id]) {
 										chat_result[v.chat_id][v.message_id] = v;
+
 										storageChat();
 										if (chat_id == v.chat_id) {
 											var msg_box = '<div class="incoming_msg">';
 											msg_box += '<div class="incoming_msg_img">';
 											msg_box += '<div class="msg_name">' + v.first_name + " " + v.last_name + '</div>';
-											if (r) {
-												v.reply = r;
+											if (v.reply) {
 												msg_box += '<div class="reply">' + r.first_name + ' ' + r.last_name + '<br/>' + r.msg + '</div>';
 											}
 											msg_box += '</div>';
-
 											msg_box += '<div class="received_msg"><div class="received_withd_msg">';
 											msg_box += '<p class="msg_box" data-msg_id="' + v.message_id + '">' + v.msg + '</p>';
-											if (v.file_id) {
-												msg_box += '<button data-file_id="' + v.file_id + '" class="btn open_media" type="submit"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>';
+											if (v.file_id && !v.animate_sticker) { // cant show if animate sticker
+												msg_box += '<button data-file_id="' + v.file_id + '" class="btn open_media" type="submit"><i class="fa fa-download" aria-hidden="true"></i></button>';
+											}
+											if (v.msg.endsWith(":sticker")) {
+												msg_box += '<button data-toggle="modal" data-target="#addsticker" data-sticker_name="'+v.sticker_name+'" data-file_id="' + v.file_id + '" class="btn add_sticker" type="submit"><i class="fa fa-plus" aria-hidden="true"></i></button>';
 											}
 											msg_box += '<span class="time_date">' + v.date + '</span> </div>';
 											msg_box += '</div></div></div>';
@@ -145,21 +154,22 @@
 				$.get(url + "sendMessage", msg)
 					.done(function (data) {
 						if (data.ok) {
-							
+
 							var message = data.result;
 							var v = convertMessage(message);
-							if(msg_id){
+							var r = null;
+							if (msg_id) {
 								r = convertMessage(message.reply_to_message);
 								v.reply = r;
 							}
 							chat_result[v.chat_id][v.message_id] = v;
 							storageChat();
 							var msg_box = '<div class="outgoing_msg"><div class="outgoing_msg_detail">';
-								if(msg_id){
-									msg_box += '<div class="out_reply">'+ r.first_name + ' ' + r.last_name + '<br/>' + r.msg + '</div>';
-								}
+							if (msg_id) {
+								msg_box += '<div class="out_reply">' + r.first_name + ' ' + r.last_name + '<br/>' + r.msg + '</div>';
+							}
 							msg_box += '<div class="sent_msg"><p>' + $(".write_msg").val() + '</p></div>';
-							msg_box +='</div></div>';
+							msg_box += '</div></div>';
 							$(".msg_history").append(msg_box);
 							$(".write_msg").val("");
 							msg_id = 0;
@@ -184,12 +194,12 @@
 						if (data.ok) {
 							var file = data.result.file_path;
 							var file_path = "https://api.telegram.org/file/bot" + token + "/" + file;
-							
+
 							if (file.startsWith("animations")) {
 								var msg = '<video width="450" height="360" autoplay controls  loop>';
 								msg += '<source src="' + file_path + '" type="video/mp4">';
 								msg += '</video>';
-							} else if (file.startsWith("stickers")) {
+							} else if (file.startsWith("stickers") || file.startsWith("photos")) {
 								var msg = '<img src="' + file_path + '"/>';
 							} else {
 								var msg = file_path;
@@ -214,6 +224,80 @@
 				localStorage.removeItem("chat_room");
 				location.reload();
 			})
+			$('#addsticker').on('show.bs.modal', function (event) {
+				var button = $(event.relatedTarget);
+				var file_id = button.data('file_id');
+				var sticker_name = button.data('sticker_name');
+				var modal = $(this)
+				//modal.find('.modal-title').text('Add Sticker');
+				modal.find('.modal-body input#sticker_name').val(sticker_name);
+				modal.find('.modal-body input#sticker_id').val(file_id);
+			});
+
+			//save sticker
+			$("#form_sticker").submit(function (e) {
+				e.preventDefault();
+				let formData = $(this).serializeArray().reduce((obj, field) => {
+					obj[field.name] = field.value;
+					return obj;
+				}, {});
+				var sticker = {};
+				sticker[formData.file_id] = (formData.custom_name) ? formData.custom_name : formData.sticker_name;
+				var result = (!jQuery.isEmptyObject(localStorage.getItem("sticker"))) ? JSON.parse(localStorage.getItem("sticker")) : {};
+
+				let combine = {
+					...result,
+					...sticker
+				};
+				localStorage.setItem("sticker", JSON.stringify(combine)); //add the new message to localStorage
+			});
+			//open sticker menu
+			$('#opensticker').on('show.bs.modal', function (event) {
+				var result = (!jQuery.isEmptyObject(localStorage.getItem("sticker"))) ? JSON.parse(localStorage.getItem("sticker")) : {};
+				var modal = $(this)
+				//modal.find('.modal-title').text('Add Sticker');
+				var msg_box = '<div class="row">';
+				jQuery.each(result, function (index, val) {
+					msg_box += "<div style='overflow: hidden;' class='col-md-4'><button data-file_id='"+index+"' class='btn sendsticker'>"+val+"</button></div>";
+				});
+				msg_box += "</div>";
+				modal.find('.modal-body').html(msg_box);
+			});
+
+			//send sticker
+			$("#opensticker").on("click", '.sendsticker', function () {				
+				var msg = { chat_id: chat_id, sticker: $(this).data("file_id") };
+				if (msg_id) {
+					msg.reply_to_message_id = msg_id;
+				}
+
+				$.get(url + "sendSticker", msg)
+					.done(function (data) {
+						if (data.ok) {
+							console.log(data.result);
+							var message = data.result;
+							var v = convertMessage(message);
+							var r = null;
+							if (msg_id) {
+								r = convertMessage(message.reply_to_message);
+								v.reply = r;
+							}
+							chat_result[v.chat_id][v.message_id] = v;
+							storageChat();
+							var msg_box = '<div class="outgoing_msg"><div class="outgoing_msg_detail">';
+							if (msg_id) {
+								msg_box += '<div class="out_reply">' + r.first_name + ' ' + r.last_name + '<br/>' + r.msg + '</div>';
+							}
+							msg_box += '<div class="sent_msg"><p>' + v.msg + '</p></div>';
+							msg_box += '</div></div>';
+							$(".msg_history").append(msg_box);
+							msg_id = 0;
+							$('#reply_msg').empty();
+							$(".msg_history").stop().animate({ scrollTop: $(".msg_history")[0].scrollHeight }, 100);
+						}
+					});
+
+			});
 
 			function storageChat() {
 				var result = (!jQuery.isEmptyObject(localStorage.getItem("chat_result"))) ? JSON.parse(localStorage.getItem("chat_result")) : {};
@@ -231,34 +315,37 @@
 
 			function appendMsg() {
 				jQuery.each(chat_result[chat_id], function (index, v) {
+
 					if (v.user_id != bot_id) {
-						var msg = '<div class="incoming_msg">';
-						msg += '<div class="incoming_msg_img">';
-						msg += '<div class="msg_name">' + v.first_name + " " + v.last_name + '</div>';
-							
+						var msg_box = '<div class="incoming_msg">';
+						msg_box += '<div class="incoming_msg_img">';
+						msg_box += '<div class="msg_name">' + v.first_name + " " + v.last_name + '</div>';
+
 						if (v.reply) {
-							msg += '<div class="reply">' + v.reply.first_name + ' ' + v.reply.last_name + '<br/>' + v.reply.msg + '</div>';
+							msg_box += '<div class="reply">' + v.reply.first_name + ' ' + v.reply.last_name + '<br/>' + v.reply.msg + '</div>';
 						}
 
-						msg += '</div>';
-						msg += '<div class="received_msg"><div class="received_withd_msg">';
-						msg += '<p class="msg_box" data-msg_id="' + v.message_id + '">' + v.msg + '</p>';
-						if (v.file_id) {
-							msg += '<button data-file_id="' + v.file_id + '" class="btn open_media" type="submit"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>';
+						msg_box += '</div>';
+						msg_box += '<div class="received_msg"><div class="received_withd_msg">';
+						msg_box += '<p class="msg_box" data-msg_id="' + v.message_id + '">' + v.msg + '</p>';
+						if (v.file_id && !v.animate_sticker) {
+							msg_box += '<button data-file_id="' + v.file_id + '" class="btn open_media" type="submit"><i class="fa fa-download" aria-hidden="true"></i></button>';
 						}
-						msg += '<span class="time_date">' + v.date + '</span> </div>';
-						msg += '</div></div></div>';
+						if (v.msg.endsWith(":sticker")) {
+							msg_box += '<button data-toggle="modal" data-target="#addsticker" data-sticker_name="'+v.sticker_name+'" data-file_id="' + v.file_id + '" class="btn add_sticker" type="submit"><i class="fa fa-plus" aria-hidden="true"></i></button>';						}
+						msg_box += '<span class="time_date">' + v.date + '</span> </div>';
+						msg_box += '</div></div></div>';
 
 					} else {
-						var msg = '<div class="outgoing_msg"><div class="outgoing_msg_detail">';
-								if(v.reply){
-									msg += '<div class="out_reply">'+ v.reply.first_name + ' ' + v.reply.last_name + '<br/>' + v.reply.msg + '</div>';
-								}
-							msg += '<div class="sent_msg"><p>' + v.msg + '</p></div>';
-							msg +='</div></div>';
+						var msg_box = '<div class="outgoing_msg"><div class="outgoing_msg_detail">';
+						if (v.reply) {
+							msg_box += '<div class="out_reply">' + v.reply.first_name + ' ' + v.reply.last_name + '<br/>' + v.reply.msg + '</div>';
+						}
+						msg_box += '<div class="sent_msg"><p>' + v.msg + '</p></div>';
+						msg_box += '</div></div>';
 
 					}
-					$(".msg_history").append(msg);
+					$(".msg_history").append(msg_box);
 				});
 			}
 
@@ -285,12 +372,64 @@
 						<div class="input_msg_write">
 							<div id='reply_msg'></div>
 							<form id="msg">
-								<input type="text" class="write_msg" placeholder="Type a message" />
+								<input type="text" class="write_msg form-control" placeholder="Type a message" />
+								<button  data-toggle="modal" data-target="#opensticker" class="sticker_send_btn" type="button"><i
+										class="fa fa-smile-o" aria-hidden="true"></i></button>
 								<button class="msg_send_btn" type="submit"><i class="fa fa-paper-plane-o"
 										aria-hidden="true"></i></button>
 							</form>
 						</div>
 					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade" id="addsticker" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+		aria-hidden="true">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Add Sticker</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<form id="form_sticker">
+					<div class="modal-body">
+						<div class="form-group">
+							<label for="recipient-name" class="col-form-label">Sticker name:</label>
+							<input type="text" readonly name='sticker_name' class="form-control" id="sticker_name">
+							<input type="hidden" name='file_id' class="form-control" id="sticker_id">
+						</div>
+						<div class="form-group">
+							<label for="message-text" class="col-form-label">Custom sticker name(Optional):</label>
+							<textarea class="form-control" name='custom_name' id="custom_name"></textarea>
+						</div>
+
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+						<button type="sumbit" id="save_sticker" data-dismiss="modal" class="btn btn-primary">Save</button>
+				</form>
+			</div>
+		</div>
+	</div>
+	</div>
+
+	<div class="modal fade" id="opensticker" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+		aria-hidden="true">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Send Sticker</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body container">
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
 				</div>
 			</div>
 		</div>
