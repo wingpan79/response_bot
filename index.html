@@ -250,6 +250,7 @@
 					...sticker
 				};
 				localStorage.setItem("sticker", JSON.stringify(combine)); //add the new message to localStorage
+				$('#addsticker').modal('toggle');
 			});
 			//open sticker menu
 			$('#opensticker').on('show.bs.modal', function (event) {
@@ -409,7 +410,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-						<button type="sumbit" id="save_sticker" data-dismiss="modal" class="btn btn-primary">Save</button>
+						<button type="sumbit" id="save_sticker" class="btn btn-primary">Save</button>
 				</form>
 			</div>
 		</div>
