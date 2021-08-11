@@ -37,6 +37,7 @@
 			}, 10000);
 
 			function convertMessage(message) {
+				
 				var first_name = (message.from.first_name) ? message.from.first_name : "";
 				var last_name = (message.from.last_name) ? message.from.last_name : "";
 				var title = (message.chat.title) ? message.chat.title : first_name + " " + last_name;
@@ -88,12 +89,15 @@
 				$.get(url + "getupdates", { offset: offset })
 					.done(function (data) {
 						if (data.ok) {
-
+							
 							if (data.result.length) {
 								var message = null;
 								jQuery.each(data.result, function (index, val) {
+									
 									var message = (val.message) ? val.message : val.edited_message;
-									console.log(message);
+									if(!message){
+										return; //ignore if not msg
+									}
 									v = convertMessage(message);
 									var r = null;
 									if (message.reply_to_message) {
@@ -221,7 +225,7 @@
 				token = $("#token").val();
 				url = "https://api.telegram.org/bot" + token + "/";
 				localStorage.setItem("token", token);
-				localStorage.removeItem("chat_room");
+				localStorage.removeItem("chat_result");
 				location.reload();
 			})
 			$('#addsticker').on('show.bs.modal', function (event) {
