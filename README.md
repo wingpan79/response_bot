@@ -1,4 +1,4 @@
-# telegram_bot_chatroom
+# Telegram_bot_chatroom
 
 Simple web app with html and jquery, creating a chatroom in telegram using your telegram bot. All chat history will only be saved in your device and **not transfer the chat history to your other device** even you are using the same token.
 
@@ -28,7 +28,6 @@ To create a chatbot on Telegram, you need to contact the BotFather.
 
 ![2021-08-12 16_17_04-index html](https://user-images.githubusercontent.com/28686176/129162871-2f00f68e-2690-48a3-aacc-076ef68611eb.png)
 
-# Addition
 
 ## Delete Webhook
 
@@ -47,4 +46,4 @@ The newly created bot is in privacy mode by default. A bot running in privacy mo
   3.Choose your bot and Send Disable
   
   4.Now your bot can receive group messages
-![2021-08-12 11_10_19-GoToWebinar _ GoToWebinar](https://user-images.githubusercontent.com/28686176/129168990-de1f7918-6cf6-40ae-b1f2-627de37ae420.png)
+![2021-08-12 16_57_56-Telegram (498127)](https://user-images.githubusercontent.com/28686176/129169114-ccc74c38-d113-4055-b067-10598381d5a8.png)
