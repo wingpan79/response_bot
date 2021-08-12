@@ -1,6 +1,6 @@
 # Telegram_bot_chatroom
 
-Simple web app with html and jquery, creating a chatroom in telegram using your telegram bot. All chat history will only be saved in your device and **not transfer the chat history to your other device** even you are using the same token.
+Simple web app with html and jquery, creating a chatroom in telegram using your telegram bot. All chat history **only saved in your device** and **will not transfer the chat history to your other device** even you are using the same token.
 
 You can download and run index.html in your desktop or using it in [here](https://wingpan79.github.io/telegram_bot_chatroom/) 
 
