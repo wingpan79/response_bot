@@ -46,4 +46,5 @@ The newly created bot is in privacy mode by default. A bot running in privacy mo
   3.Choose your bot and Send Disable
   
   4.Now your bot can receive group messages
+  
 ![2021-08-12 16_57_56-Telegram (498127)](https://user-images.githubusercontent.com/28686176/129169114-ccc74c38-d113-4055-b067-10598381d5a8.png)
