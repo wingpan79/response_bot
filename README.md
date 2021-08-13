@@ -31,7 +31,7 @@ To create a chatbot on Telegram, you need to contact the BotFather.
 
 ## Delete Webhook
 
-Please **do not set any webhook service** if you want to use this web app.You can go to [https://api.telegram.org/bot<you-token>/deletewebhook](https://api.telegram.org/bot<you-token>/deletewebhook) to delete the webhook service.
+Please **do not set any webhook service** if you want to use this web app.If you alreay set another webhook service,you can go to https://api.telegram.org/bot"you-token"/deletewebhook to delete the webhook service.
   
 ## The group privacy mode
 
